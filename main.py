@@ -2,10 +2,12 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-img = cv2.imread("Bad_Apple_Frames/bad_apple_237.png", cv2.IMREAD_GRAYSCALE)
+# Images sourced from https://archive.org/details/bad_apple_is.7z
 
 HORI_RES = 1440 # must be multiple of 9
-ROWS = 10
+ROWS = 9 # number of rows to collapse to map from original image to UCSC browser
+
+NUM_FRAMES = 6562
 
 #chrom chromStart chromEnd name score strand thickStart thickEnd itemRgb blockCount blockSizes blockStarts
 
@@ -60,24 +62,34 @@ def img_to_bed(img, hori_res, frame):
 
         chrom = frame_to_base(hori_res, frame)
 
-        bed_line = f"chr22 {chrom[0]} {chrom[1]} bad_apple 1000 . {chrom[0]} {chrom[1]} 0 {blockCount + 2} 1,{blockSizes}1 0,{blockStarts}1441"
+        bed_line = f"chr22 {chrom[0]} {chrom[1]} bad_apple 1000 . {chrom[0]} {chrom[1]} 0 {blockCount + 2} 1,{blockSizes}1 0,{blockStarts}{hori_res+1}"
         bed_list.append(bed_line)
     
     bed_list.reverse()
 
     return bed_list
 
-img = resize(img, HORI_RES)
-img = merge_rows_vertically(img, ROWS)
-img = black_white(img)
+output_bed_string = ""
 
+output_bed_string += alignment_frame(HORI_RES) 
+output_bed_string += "\n"
 
-print(alignment_frame(HORI_RES))
-print("\n".join(img_to_bed(img, HORI_RES, 1)))
+for i in range(1, NUM_FRAMES):
+    str_i = str(i)
 
+    while len(str_i) < 3:
+        str_i = "0" + str_i
 
-'''
-chr22 0 1600 bad_apple 1000 . 0 1600 0 1 1600 0
-chr22 3119 4561 bad_apple 1000 . 3119 4561 0 2 1,1 0,1441
-chr22 4639 6081 bad_apple 1000 . 4639 6081 0 2 1,1 0,1441
-'''
+    img = cv2.imread(f"bad_apple/image_sequence/bad_apple_{str_i}.png", cv2.IMREAD_GRAYSCALE)
+
+    img = resize(img, HORI_RES)
+    img = merge_rows_vertically(img, ROWS)
+    img = black_white(img)
+
+    output_bed_string += "\n".join(img_to_bed(img, HORI_RES, i-1))
+    output_bed_string += "\n"
+
+with open("output.bed", "w") as f:
+    f.write(output_bed_string)
+
+    
