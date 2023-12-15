@@ -1,0 +1,5 @@
+.DS_Store
+.venv
+bad_apple_output/*
+!bad_apple_output
+!bad_apple_output/.gitkeep
